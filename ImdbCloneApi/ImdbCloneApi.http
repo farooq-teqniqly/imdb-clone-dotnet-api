@@ -1,0 +1,6 @@
+@ImdbCloneApi_HostAddress = http://localhost:32768
+
+GET {{ImdbCloneApi_HostAddress}}/api/weatherforecast/
+Accept: application/json
+
+###
