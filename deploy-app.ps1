@@ -98,6 +98,10 @@ if ($LASTEXITCODE -ne 0) {
         --registry-username $RegistryName `
         --registry-password $(az acr credential show --name $RegistryName --query "passwords[0].value" -o tsv) `
         --output none
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Container App creation failed"
+        exit 1
+    }
 } else {
     # Update existing Container App
     Write-Host "Updating existing Container App: $ContainerAppName" -ForegroundColor Yellow
@@ -117,6 +121,10 @@ if ($LASTEXITCODE -ne 0) {
         --resource-group $ResourceGroupName `
         --image $fullImageName `
         --output none
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Container App update failed"
+        exit 1
+    }
 }
 
 # Get the app URL
