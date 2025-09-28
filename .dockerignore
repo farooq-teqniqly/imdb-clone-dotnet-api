@@ -1,7 +1,6 @@
 **/.classpath
 **/.dockerignore
 **/.env
-**/.git
 **/.gitignore
 **/.project
 **/.settings
@@ -23,7 +22,10 @@
 LICENSE
 README.md
 !**/.gitignore
-!.git/HEAD
-!.git/config
-!.git/packed-refs
-!.git/refs/heads/**
+/.git/*
+!/.git/HEAD
+!/.git/config
+!/.git/packed-refs
+!/.git/refs/
+!/.git/refs/heads/
+!/.git/refs/heads/**
