@@ -101,13 +101,21 @@ if ($LASTEXITCODE -ne 0) {
 } else {
     # Update existing Container App
     Write-Host "Updating existing Container App: $ContainerAppName" -ForegroundColor Yellow
+    
+    # First, update the registry configuration with admin credentials
+    az containerapp registry set `
+        --name $ContainerAppName `
+        --resource-group $ResourceGroupName `
+        --server "$RegistryName.azurecr.io" `
+        --username $RegistryName `
+        --password $(az acr credential show --name $RegistryName --query "passwords[0].value" -o tsv) `
+        --output none
+    
+    # Then update the container image
     az containerapp update `
         --name $ContainerAppName `
         --resource-group $ResourceGroupName `
         --image $fullImageName `
-        --registry-server "$RegistryName.azurecr.io" `
-        --registry-username $RegistryName `
-        --registry-password $(az acr credential show --name $RegistryName --query "passwords[0].value" -o tsv) `
         --output none
 }
 
