@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0290.severity = none
+
+# S4035: Seal class 'Entity' or implement 'IEqualityComparer<T>' instead.
+dotnet_diagnostic.S4035.severity = none
+
+[*Test*.cs]
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
+# CA1024: Use properties where appropriate
+dotnet_diagnostic.CA1024.severity = none
+
+# CA1861: Avoid constant arrays as arguments
+dotnet_diagnostic.CA1861.severity = none
+
+# IDE0300: Use collection expression for array
+dotnet_diagnostic.IDE0300.severity = none
