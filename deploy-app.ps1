@@ -139,9 +139,17 @@ Write-Host "Configuring managed identity for ACR access..." -ForegroundColor Yel
 # Enable system-assigned managed identity on the Container App
 Write-Host "Enabling system-assigned managed identity..." -ForegroundColor Yellow
 az containerapp identity assign --name $ContainerAppName --resource-group $ResourceGroupName --system-assigned --output none
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to assign system-managed identity to the Container App"
+    exit 1
+}
 
 # Get the principal ID of the managed identity
 $principalId = az containerapp identity show --name $ContainerAppName --resource-group $ResourceGroupName --query "principalId" -o tsv
+if (-not $principalId) {
+    Write-Error "Unable to retrieve the managed identity principalId"
+    exit 1
+}
 
 # Get the ACR resource ID
 $acrResourceId = az acr show --name $RegistryName --resource-group $ResourceGroupName --query "id" -o tsv
@@ -149,13 +157,25 @@ $acrResourceId = az acr show --name $RegistryName --resource-group $ResourceGrou
 # Grant AcrPull role to the managed identity
 Write-Host "Granting AcrPull permissions to managed identity..." -ForegroundColor Yellow
 az role assignment create --assignee $principalId --role "AcrPull" --scope $acrResourceId --output none
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to grant AcrPull permissions to the managed identity"
+    exit 1
+}
 
 # Update Container App to use managed identity instead of admin credentials
 Write-Host "Updating Container App to use managed identity..." -ForegroundColor Yellow
 az containerapp registry set --name $ContainerAppName --resource-group $ResourceGroupName --server "$RegistryName.azurecr.io" --identity "system" --output none
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to configure the Container App registry to use the managed identity"
+    exit 1
+}
 
 # Disable admin account for security
 Write-Host "Disabling ACR admin account for security..." -ForegroundColor Yellow
 az acr update --name $RegistryName --admin-enabled false --output none
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to disable the ACR admin account; leaving it enabled to prevent pull failures"
+    exit 1
+}
 
 Write-Host "Deployment completed with managed identity configured." -ForegroundColor Green
