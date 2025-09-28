@@ -17,7 +17,7 @@ Use the `deploy-app.ps1` script to build and deploy the API to Azure Container A
 - `ResourceGroupName` (required): Name of the Azure resource group
 - `ContainerAppName` (required): Name for the container app
 - `RegistryName` (required): Name for the Azure Container Registry
-- `Location` (optional): Azure region (default: eastus)
+- `Location` (optional): Azure region (default: westus2)
 - `ImageName` (optional): Docker image name (default: imdb-clone-api)
 - `Tag` (optional): Docker image tag (default: latest)
 - `EnvironmentName` (optional): Container Apps environment name (default: {ContainerAppName}-env)

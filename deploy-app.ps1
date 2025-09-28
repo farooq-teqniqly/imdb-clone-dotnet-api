@@ -9,7 +9,7 @@ param(
     [string]$RegistryName,
 
     [Parameter(Mandatory=$false)]
-    [string]$Location = "eastus",
+    [string]$Location = "westus2",
 
     [Parameter(Mandatory=$false)]
     [string]$ImageName = "imdb-clone-api",
@@ -43,9 +43,11 @@ Write-Host "Ensuring Azure Container Registry exists..." -ForegroundColor Yellow
 az acr show --name $RegistryName --resource-group $ResourceGroupName --query "name" -o tsv 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Creating Azure Container Registry: $RegistryName" -ForegroundColor Yellow
-    az acr create --resource-group $ResourceGroupName --name $RegistryName --sku Basic --output none
+    az acr create --resource-group $ResourceGroupName --name $RegistryName --sku Basic --admin-enabled true --output none
 } else {
     Write-Host "Azure Container Registry $RegistryName already exists." -ForegroundColor Cyan
+    # Ensure admin is enabled for existing registry
+    az acr update --name $RegistryName --admin-enabled true --output none
 }
 
 # Login to ACR
@@ -55,7 +57,7 @@ az acr login --name $RegistryName
 # Build Docker image
 Write-Host "Building Docker image..." -ForegroundColor Yellow
 $fullImageName = "$RegistryName.azurecr.io/$ImageName`:$Tag"
-docker build -t $fullImageName ./ImdbCloneApi
+docker build -t $fullImageName -f ./ImdbCloneApi/Dockerfile .
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Docker build failed"
     exit 1
@@ -115,4 +117,29 @@ $appUrl = az containerapp show --name $ContainerAppName --resource-group $Resour
 Write-Host "Deployment successful!" -ForegroundColor Green
 Write-Host "Your API is available at: https://$appUrl" -ForegroundColor Cyan
 
-Write-Host "Deployment completed." -ForegroundColor Green
+# Configure managed identity for secure ACR access
+Write-Host "Configuring managed identity for ACR access..." -ForegroundColor Yellow
+
+# Enable system-assigned managed identity on the Container App
+Write-Host "Enabling system-assigned managed identity..." -ForegroundColor Yellow
+az containerapp identity assign --name $ContainerAppName --resource-group $ResourceGroupName --system-assigned --output none
+
+# Get the principal ID of the managed identity
+$principalId = az containerapp identity show --name $ContainerAppName --resource-group $ResourceGroupName --query "principalId" -o tsv
+
+# Get the ACR resource ID
+$acrResourceId = az acr show --name $RegistryName --resource-group $ResourceGroupName --query "id" -o tsv
+
+# Grant AcrPull role to the managed identity
+Write-Host "Granting AcrPull permissions to managed identity..." -ForegroundColor Yellow
+az role assignment create --assignee $principalId --role "AcrPull" --scope $acrResourceId --output none
+
+# Update Container App to use managed identity instead of admin credentials
+Write-Host "Updating Container App to use managed identity..." -ForegroundColor Yellow
+az containerapp registry set --name $ContainerAppName --resource-group $ResourceGroupName --server "$RegistryName.azurecr.io" --identity "system" --output none
+
+# Disable admin account for security
+Write-Host "Disabling ACR admin account for security..." -ForegroundColor Yellow
+az acr update --name $RegistryName --admin-enabled false --output none
+
+Write-Host "Deployment completed with managed identity configured." -ForegroundColor Green
